@@ -1,8 +1,13 @@
 #include <iostream>
 
+struct cache {
+  bool valid;
+  std::string rep;
+};
 
 class Date {
   int d, m, y;
+  static Date default_date;
 public:
   explicit Date(int dd, int mm, int yy);
   Date(int dd, int mm);
@@ -10,13 +15,20 @@ public:
   Date();
   Date(const char*);
 
+  std::string string_rep() const;
   int day() const { return d;}
   int month() const { return m; }
   int year() const;
 
-  void add_year(int n);
-  void add_month(int n) { m+n; }
-  void add_day(int n);
+  static void set_default(int dd, int mm, int yy);
+
+  Date& add_year(int n);
+  Date& add_month(int n) { m = m+n; return *this; }
+  Date& add_day(int n);
+
+private:
+  cache* c;
+  void compute_cache_value() const;
 };
 
 int Date::year() const
@@ -26,9 +38,16 @@ int Date::year() const
 
 Date::Date(int dd, int mm, int yy)
 {
-  d = dd;
-  m = mm;
-  y = yy;
+  d = dd ? dd : default_date.d;
+  m = mm ? mm : default_date.m;
+  y = yy ? yy : default_date.y;
+}
+
+Date Date::default_date{16,12,1700};
+
+void Date::set_default(int d, int m, int y)
+{
+  default_date = {d, m, y};
 }
 
 Date::Date(int dd, int mm)
@@ -46,9 +65,24 @@ Date::Date()
 {
 }
 
-void Date::add_year(int n)
+Date& Date::add_year(int n)
 {
+  if (d==29 && m==2 /*&& !leapyear(y+n)*/) {
+    d = 1;
+    m =3;
+  }
   y += n;
+
+  return *this;
+}
+
+std::string Date::string_rep() const
+{
+  if (!c->valid) {
+    //compute_cache_value();
+    c->valid = true;
+  }
+  return c->rep;
 }
 
 class Date1 {
@@ -132,6 +166,7 @@ int main()
   std::cout << sizeof(d2) << '\n';
   std::cout << sizeof(d3) << '\n';
   std::cout << sizeof(d4) << '\n';
+  std::cout << "sizeof(std::string): " << sizeof(std::string) << '\n';
 
   return 0;
 }
